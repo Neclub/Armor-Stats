@@ -128,7 +128,7 @@ describe("scoring fixtures", () => {
     assert.ok(scoring.isPetFocusEar(loadout["Ear-1"]));
   });
 
-  it("defaults waist to best of the three effect belts", () => {
+  it("locks waist by role (effect fallback)", () => {
     const catalog = [
       {
         item_id: 20,
@@ -171,13 +171,73 @@ describe("scoring fixtures", () => {
         stats: { hp: 100, hdex: 99 },
       },
     ];
-    const loadout = scoring.buildIdealLoadout(catalog, "ROG", "BIS");
-    assert.equal(loadout.Waist.name, "Belt Boon");
+    assert.equal(scoring.buildIdealLoadout(catalog, "ROG", "BIS").Waist.name, "Belt Overdrive");
+    assert.equal(scoring.buildIdealLoadout(catalog, "WAR", "BIS").Waist.name, "Belt Slicer");
+    assert.equal(scoring.buildIdealLoadout(catalog, "WIZ", "BIS").Waist.name, "Belt Boon");
     const choices = scoring.waistChoicesForClass(
       catalog.map(scoring.normalizeItem),
       "ROG"
     );
-    assert.equal(choices.length, 3);
+    assert.equal(choices.length, 1);
+    assert.equal(choices[0][0], "Acrobat's Belt");
+  });
+
+  it("prefers named role belts over higher-stat effect matches", () => {
+    const catalog = [
+      {
+        item_id: 40,
+        name: "Acrobat's Belt of Rebellion",
+        tier: "T2",
+        classes: [],
+        class_all: true,
+        slots: ["Waist"],
+        effect: "Overdrive Punch",
+        stats: { hp: 50, hdex: 5 },
+      },
+      {
+        item_id: 41,
+        name: "Defender's Waistguard of Rebellion",
+        tier: "T2",
+        classes: [],
+        class_all: true,
+        slots: ["Waist"],
+        effect: "Crippling Slicer",
+        stats: { hp: 50, ac: 5 },
+      },
+      {
+        item_id: 42,
+        name: "Mystic's Sash of Rebellion",
+        tier: "T2",
+        classes: [],
+        class_all: true,
+        slots: ["Waist"],
+        effect: "Expanding Mind",
+        focus: "Treaded Boon of Potential",
+        stats: { hp: 50, hint: 5 },
+      },
+      {
+        item_id: 43,
+        name: "Other Overdrive",
+        tier: "T2",
+        classes: [],
+        class_all: true,
+        slots: ["Waist"],
+        effect: "Overdrive Punch",
+        stats: { hp: 999, hdex: 99 },
+      },
+    ];
+    assert.equal(
+      scoring.buildIdealLoadout(catalog, "MNK", "BIS").Waist.name,
+      "Acrobat's Belt of Rebellion"
+    );
+    assert.equal(
+      scoring.buildIdealLoadout(catalog, "PAL", "BIS").Waist.name,
+      "Defender's Waistguard of Rebellion"
+    );
+    assert.equal(
+      scoring.buildIdealLoadout(catalog, "ENC", "BIS").Waist.name,
+      "Mystic's Sash of Rebellion"
+    );
   });
 
   it("pins the ranger-only bow in the ranger range slot", () => {

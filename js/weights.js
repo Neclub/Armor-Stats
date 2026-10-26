@@ -62,6 +62,14 @@ function defaultRole(profile) {
   return "melee_dps";
 }
 
+/** Resolved EQGM role name for a class (tank, priest, pure_caster, melee_dps, hybrid_dps). */
+export function roleForClass(classAbbr) {
+  const key = (classAbbr || "").trim().toUpperCase() || null;
+  const packaged = key ? (tables.classes[key] || {}) : {};
+  if (packaged.role) return packaged.role;
+  return defaultRole(CLASS_TO_PROFILE[key] || "dex");
+}
+
 function mergeMaps(...maps) {
   const out = {};
   for (const map of maps) {

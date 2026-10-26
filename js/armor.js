@@ -10,7 +10,6 @@ import {
   compareTotals,
   SCORED_SLOTS,
   sumLoadoutStats,
-  waistChoicesForClass,
 } from "./scoring.js";
 import {
   HEROIC_STATS,
@@ -29,7 +28,6 @@ const els = {
   totalsBody: document.getElementById("totalsBody"),
   slots: document.getElementById("slotList"),
   chart: document.getElementById("pctChart"),
-  waistNote: document.getElementById("waistNote"),
 };
 
 let chart;
@@ -201,19 +199,6 @@ function renderSlots(baseLoadout, otherLoadout, baseLabel, otherLabel) {
   }
 }
 
-function renderWaistNote(catalog, classAbbr) {
-  const choices = waistChoicesForClass(catalog, classAbbr);
-  if (choices.length < 2) {
-    els.waistNote.classList.add("hidden");
-    els.waistNote.textContent = "";
-    return;
-  }
-  els.waistNote.classList.remove("hidden");
-  els.waistNote.textContent =
-    `Waist is a personal choice among: ${choices.map(([label, item]) => `${label} (${item.name})`).join("; ")}. ` +
-    `The loadout uses the highest class-weighted of these.`;
-}
-
 async function refresh() {
   if (!ready) return;
   const classAbbr = els.class.value;
@@ -254,12 +239,6 @@ async function refresh() {
   renderTotals(rows);
   renderChart(rows);
   renderSlots(baseLoadout, otherLoadout, baseExp.abbr, otherExp.abbr);
-  renderWaistNote(
-    (mode === "T1" ? baseCat.items.filter((i) => i.tier === "T1")
-      : mode === "T2" ? baseCat.items.filter((i) => i.tier === "T2")
-        : baseCat.items),
-    classAbbr
-  );
 }
 
 async function init() {

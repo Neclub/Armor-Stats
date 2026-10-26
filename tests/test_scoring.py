@@ -30,11 +30,33 @@ SCORED = [
     "Shoulders", "Wrist-1", "Wrist-2", "Legs", "Hands", "Charm", "Feet",
     "Fingers-1", "Fingers-2", "Range",
 ]
-WAIST_LABELS = (
-    "Overdrive Punch",
-    "Treaded Boon of Potential",
-    "Crippling Slicer",
-)
+WAIST_BY_ROLE = {
+    "tank": {
+        "label": "Defender's Waistguard",
+        "name_needle": "defender's waistguard",
+        "effect_needle": "crippling slicer",
+    },
+    "priest": {
+        "label": "Mystic's Sash",
+        "name_needle": "mystic's sash",
+        "effect_needle": "treaded boon of potential",
+    },
+    "pure_caster": {
+        "label": "Mystic's Sash",
+        "name_needle": "mystic's sash",
+        "effect_needle": "treaded boon of potential",
+    },
+    "melee_dps": {
+        "label": "Acrobat's Belt",
+        "name_needle": "acrobat's",
+        "effect_needle": "overdrive punch",
+    },
+    "hybrid_dps": {
+        "label": "Acrobat's Belt",
+        "name_needle": "acrobat's",
+        "effect_needle": "overdrive punch",
+    },
+}
 _EM_RE = re.compile(r"enhanced\s+minion\s+([ivxlcdm]+|\d+)\b", re.I)
 _ROMAN = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
 
@@ -202,21 +224,38 @@ def best_of(pool: list[dict], class_abbr: str, gear_slot: str, used: set[str]):
     return legal[0]
 
 
+def role_for_class(class_abbr: str) -> str:
+    key = (class_abbr or "").strip().upper()
+    packaged = (CLASSES.get("classes") or {}).get(key) or {}
+    if packaged.get("role"):
+        return packaged["role"]
+    profile = CLASS_TO_PROFILE.get(key, "dex")
+    if profile == "int":
+        return "pure_caster"
+    if profile == "wis":
+        return "priest"
+    return "melee_dps"
+
+
 def waist_match(item: dict, label: str) -> bool:
     hay = f"{item['effect']} {item['focus']}".casefold()
     return label.casefold() in hay
 
 
+def preferred_waist_spec(class_abbr: str) -> dict:
+    return WAIST_BY_ROLE.get(role_for_class(class_abbr), WAIST_BY_ROLE["melee_dps"])
+
+
 def best_waist(pool: list[dict], class_abbr: str, used: set[str]):
-    picks = []
-    for label in WAIST_LABELS:
-        match = [c for c in pool if waist_match(c, label)]
-        pick = best_of(match, class_abbr, "Waist", used)
-        if pick:
-            picks.append(pick)
-    if picks:
-        picks.sort(key=lambda c: rank_tuple(c, class_abbr, "Waist"))
-        return picks[0]
+    spec = preferred_waist_spec(class_abbr)
+    by_name = [c for c in pool if spec["name_needle"] in c["name"].casefold()]
+    pick = best_of(by_name, class_abbr, "Waist", used)
+    if pick:
+        return pick
+    by_effect = [c for c in pool if waist_match(c, spec["effect_needle"])]
+    pick = best_of(by_effect, class_abbr, "Waist", used)
+    if pick:
+        return pick
     return best_of(pool, class_abbr, "Waist", used)
 
 
@@ -286,19 +325,38 @@ class ScoringFixtures(unittest.TestCase):
         loadout = build_loadout(catalog, "MAG", "BIS")
         self.assertEqual(loadout["Ear-1"]["name"], "Summoner Stud Higher EM")
 
-    def test_waist_three_belts(self) -> None:
+    def test_waist_role_locked(self) -> None:
         catalog = [
             {"item_id": 20, "name": "Belt Overdrive", "tier": "T2", "class_all": True,
              "slots": ["Waist"], "effect": "Overdrive Punch", "stats": {"hp": 100, "hdex": 20}},
             {"item_id": 21, "name": "Belt Boon", "tier": "T2", "class_all": True,
-             "slots": ["Waist"], "effect": "Treaded Boon of Potential", "stats": {"hp": 100, "hdex": 40}},
+             "slots": ["Waist"], "effect": "Treaded Boon of Potential", "focus": "Treaded Boon of Potential",
+             "stats": {"hp": 100, "hdex": 40}},
             {"item_id": 22, "name": "Belt Slicer", "tier": "T2", "class_all": True,
              "slots": ["Waist"], "effect": "Crippling Slicer", "stats": {"hp": 100, "hdex": 10}},
             {"item_id": 23, "name": "Belt Random High", "tier": "T2", "class_all": True,
              "slots": ["Waist"], "effect": "Something Else", "stats": {"hp": 100, "hdex": 99}},
         ]
-        loadout = build_loadout(catalog, "ROG", "BIS")
-        self.assertEqual(loadout["Waist"]["name"], "Belt Boon")
+        self.assertEqual(build_loadout(catalog, "ROG", "BIS")["Waist"]["name"], "Belt Overdrive")
+        self.assertEqual(build_loadout(catalog, "WAR", "BIS")["Waist"]["name"], "Belt Slicer")
+        self.assertEqual(build_loadout(catalog, "WIZ", "BIS")["Waist"]["name"], "Belt Boon")
+        self.assertEqual(build_loadout(catalog, "CLR", "BIS")["Waist"]["name"], "Belt Boon")
+
+    def test_waist_prefers_named_role_belt(self) -> None:
+        catalog = [
+            {"item_id": 40, "name": "Acrobat's Belt of Rebellion", "tier": "T2", "class_all": True,
+             "slots": ["Waist"], "effect": "Overdrive Punch", "stats": {"hp": 50, "hdex": 5}},
+            {"item_id": 41, "name": "Defender's Waistguard of Rebellion", "tier": "T2", "class_all": True,
+             "slots": ["Waist"], "effect": "Crippling Slicer", "stats": {"hp": 50, "ac": 5}},
+            {"item_id": 42, "name": "Mystic's Sash of Rebellion", "tier": "T2", "class_all": True,
+             "slots": ["Waist"], "effect": "Expanding Mind", "focus": "Treaded Boon of Potential",
+             "stats": {"hp": 50, "hint": 5}},
+            {"item_id": 43, "name": "Other Overdrive", "tier": "T2", "class_all": True,
+             "slots": ["Waist"], "effect": "Overdrive Punch", "stats": {"hp": 999, "hdex": 99}},
+        ]
+        self.assertEqual(build_loadout(catalog, "MNK", "BIS")["Waist"]["name"], "Acrobat's Belt of Rebellion")
+        self.assertEqual(build_loadout(catalog, "PAL", "BIS")["Waist"]["name"], "Defender's Waistguard of Rebellion")
+        self.assertEqual(build_loadout(catalog, "ENC", "BIS")["Waist"]["name"], "Mystic's Sash of Rebellion")
 
     def test_ranger_range_is_ranger_bow(self) -> None:
         catalog = [

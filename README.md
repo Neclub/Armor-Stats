@@ -2,7 +2,7 @@
 
 Static GitHub Pages site that compares EverQuest raid T1 / T2 / BiS gear from **Torment of Velious** through **Favors of Fortune**.
 
-BiS scoring follows [EQ Gear Management](https://github.com/) rules (class weights, non-lore wrists, MAG/BST/NEC pet-focus ears, three waist effect belts). Item stats are cached from EQ Resource in committed JSON, same pattern as EQGM Web.
+BiS scoring follows [EQ Gear Management](https://github.com/) rules (class weights, non-lore wrists, MAG/BST/NEC pet-focus ears). Waist is role-locked: tanks use Defender's Waistguard, casters/priests use Mystic's Sash, pure melee and hybrids use Acrobat's (effect fallback on older expansions). Item stats are cached from EQ Resource in committed JSON, same pattern as EQGM Web.
 
 ## Pages
 

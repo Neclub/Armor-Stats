@@ -1,6 +1,6 @@
 /** EQGM Raid BiS loadout ranking ported for the Armor Stats site. */
 
-import { resolveWeights, scoreStats } from "./weights.js";
+import { resolveWeights, roleForClass, scoreStats } from "./weights.js";
 
 export const SCORED_SLOTS = [
   "Ear-1", "Head", "Face", "Ear-2", "Chest", "Neck", "Arms", "Back", "Waist",
@@ -10,11 +10,35 @@ export const SCORED_SLOTS = [
 
 export const NON_LORE_SLOTS = new Set(["Wrist-1", "Wrist-2"]);
 export const PET_FOCUS_CLASSES = new Set(["MAG", "BST", "NEC"]);
-export const WAIST_CHOICE_LABELS = [
-  "Overdrive Punch",
-  "Treaded Boon of Potential",
-  "Crippling Slicer",
-];
+
+/** Fixed waist by role. Name match first; effect/focus fallback for older expansions. */
+export const WAIST_BY_ROLE = {
+  tank: {
+    label: "Defender's Waistguard",
+    nameNeedle: "defender's waistguard",
+    effectNeedle: "crippling slicer",
+  },
+  priest: {
+    label: "Mystic's Sash",
+    nameNeedle: "mystic's sash",
+    effectNeedle: "treaded boon of potential",
+  },
+  pure_caster: {
+    label: "Mystic's Sash",
+    nameNeedle: "mystic's sash",
+    effectNeedle: "treaded boon of potential",
+  },
+  melee_dps: {
+    label: "Acrobat's Belt",
+    nameNeedle: "acrobat's",
+    effectNeedle: "overdrive punch",
+  },
+  hybrid_dps: {
+    label: "Acrobat's Belt",
+    nameNeedle: "acrobat's",
+    effectNeedle: "overdrive punch",
+  },
+};
 
 const ROMAN = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
 
@@ -182,24 +206,35 @@ export function matchesWaistLabel(item, label) {
   return hay.includes(needle);
 }
 
+export function preferredWaistSpec(classAbbr) {
+  const role = roleForClass(classAbbr);
+  return WAIST_BY_ROLE[role] || WAIST_BY_ROLE.melee_dps;
+}
+
+export function matchesPreferredWaist(item, spec, preferName) {
+  if (!spec) return false;
+  if (preferName) {
+    return (item.name || "").toLowerCase().includes(spec.nameNeedle);
+  }
+  return matchesWaistLabel(item, spec.effectNeedle);
+}
+
+/** Role-locked waist pick: [[label, item]] or []. */
 export function waistChoicesForClass(catalog, classAbbr, used = new Set()) {
   const pool = catalog.map(normalizeItem).filter(Boolean);
-  const out = [];
-  for (const label of WAIST_CHOICE_LABELS) {
-    const matches = pool.filter((c) => matchesWaistLabel(c, label));
-    const pick = bestOf(matches, classAbbr, "Waist", used);
-    if (pick) out.push([label, pick]);
+  const spec = preferredWaistSpec(classAbbr);
+  const byName = pool.filter((c) => matchesPreferredWaist(c, spec, true));
+  let pick = bestOf(byName, classAbbr, "Waist", used);
+  if (!pick) {
+    const byEffect = pool.filter((c) => matchesPreferredWaist(c, spec, false));
+    pick = bestOf(byEffect, classAbbr, "Waist", used);
   }
-  return out;
+  return pick ? [[spec.label, pick]] : [];
 }
 
 function bestWaist(catalog, classAbbr, used) {
   const choices = waistChoicesForClass(catalog, classAbbr, used);
-  if (choices.length) {
-    const picks = choices.map(([, item]) => item);
-    picks.sort((a, b) => cmpTuple(rankTuple(a, classAbbr, "Waist"), rankTuple(b, classAbbr, "Waist")));
-    return picks[0];
-  }
+  if (choices.length) return choices[0][1];
   return bestOf(catalog, classAbbr, "Waist", used);
 }
 
