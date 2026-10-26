@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+cache/settings.json
+cache/last_report.log
+cache/raw/

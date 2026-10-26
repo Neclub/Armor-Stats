@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQ Raid T2 Weapons</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+  <header>
+    <h1>EQ Raid T2 Weapons</h1>
+    <nav>
+      <a href="index.html">Armor / BiS</a>
+      <a class="active" href="weapons.html">T2 Weapons</a>
+    </nav>
+  </header>
+  <main>
+    <div class="controls">
+      <label>Expansion
+        <select id="expA"></select>
+      </label>
+      <label>Compare to
+        <select id="expB"></select>
+      </label>
+      <label>Skill
+        <select id="skillFilter"></select>
+      </label>
+      <label>Weapon
+        <select id="familyFilter"></select>
+      </label>
+    </div>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <section class="panel">
+      <h2>T2 weapons</h2>
+      <div id="weaponList"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Weapon comparison</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th id="baseCol">Base</th>
+            <th id="otherCol">Other</th>
+            <th class="num">Δ Dmg</th>
+            <th class="num">Δ Ratio</th>
+            <th class="num">Ratio %</th>
+          </tr>
+        </thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </section>
+  </main>
+  <footer>
+    T2 weapons only. Filter by skill and weapon type (for example Injection Dagger) to compare the same weapon across expansions.
+  </footer>
+  <script type="module" src="js/weapons.js"></script>
+</body>
+</html>

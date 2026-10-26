@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQ Raid Gear Comparison</title>
+  <link rel="stylesheet" href="css/site.css" />
+  <script src="vendor/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>EQ Raid Gear Comparison</h1>
+    <nav>
+      <a class="active" href="index.html">Armor / BiS</a>
+      <a href="weapons.html">T2 Weapons</a>
+    </nav>
+  </header>
+  <main>
+    <div class="controls">
+      <label>Class
+        <select id="classSelect"></select>
+      </label>
+      <label>Expansion A
+        <select id="expA"></select>
+      </label>
+      <label>Expansion B
+        <select id="expB"></select>
+      </label>
+      <label>Mode
+        <select id="modeSelect">
+          <option value="T1">T1</option>
+          <option value="T2">T2</option>
+          <option value="BIS">BIS</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="banner" class="banner hidden"></div>
+    <div id="waistNote" class="banner hidden"></div>
+
+    <section class="panel">
+      <h2>Stat change (older → newer)</h2>
+      <div class="chart-wrap">
+        <canvas id="pctChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Set totals</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Stat</th>
+            <th class="num" id="baseCol">Base</th>
+            <th class="num" id="otherCol">Other</th>
+            <th class="num">Change</th>
+            <th class="num">%</th>
+          </tr>
+        </thead>
+        <tbody id="totalsBody"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Loadout by slot</h2>
+      <div id="slotList" class="slot-grid"></div>
+    </section>
+  </main>
+  <footer>
+    Stats from EQ Resource. BiS rules match EQ Gear Management (class weights, wrists, pet-focus ears, waist effect belts).
+    Older expansion is always the baseline. Refresh <code>cache/</code> with <code>scripts/warm_cache.py</code>.
+  </footer>
+  <script type="module" src="js/armor.js"></script>
+</body>
+</html>
