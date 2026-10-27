@@ -4,3 +4,4 @@ __pycache__/
 cache/settings.json
 cache/last_report.log
 cache/raw/
+Info/
