@@ -206,6 +206,16 @@ export function weaponClassGroupId(item) {
   return "";
 }
 
+/** Class dropdown: exclusive pairs, or any class abbreviation the weapon allows. */
+export function weaponMatchesClassFilter(item, filterId) {
+  if (!filterId) return true;
+  if (Object.prototype.hasOwnProperty.call(EXCLUSIVE_WEAPON_CLASSES, filterId)) {
+    return weaponClassGroupId(item) === filterId;
+  }
+  if (item?.class_all) return true;
+  return weaponClassSet(item).has(String(filterId).toUpperCase());
+}
+
 export function classListLabel(item) {
   if (!item) return "—";
   if (item.class_all) return "All";

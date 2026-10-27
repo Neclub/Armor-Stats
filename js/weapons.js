@@ -1,4 +1,5 @@
 import {
+  CLASSES,
   EXPANSIONS,
   WEAPON_HANDS,
   classListLabel,
@@ -6,10 +7,10 @@ import {
   itemUrl,
   loadCatalog,
   orderedPair,
-  weaponClassGroupId,
   weaponHand,
   weaponLineLabel,
   weaponMatchKey,
+  weaponMatchesClassFilter,
 } from "./data.js";
 import { percentChange } from "./scoring.js";
 
@@ -73,7 +74,7 @@ function applyFilters(weapons) {
   const hand = els.hand.value;
   const line = els.line.value;
   return weapons.filter((w) => {
-    if (group && weaponClassGroupId(w) !== group) return false;
+    if (!weaponMatchesClassFilter(w, group)) return false;
     if (hand && weaponHand(w) !== hand) return false;
     if (line && weaponMatchKey(w) !== line) return false;
     return true;
@@ -84,9 +85,7 @@ function fillFilterOptions(weapons) {
   const prevHand = els.hand.value;
   const prevLine = els.line.value;
   const group = els.classGroup.value;
-  const pool = group
-    ? weapons.filter((w) => weaponClassGroupId(w) === group)
-    : weapons;
+  const pool = weapons.filter((w) => weaponMatchesClassFilter(w, group));
 
   const hands = new Set(pool.map((w) => weaponHand(w)).filter(Boolean));
   els.hand.innerHTML = "";
@@ -186,6 +185,13 @@ function renderList(weapons, label) {
     </table>`;
 }
 
+function sideCell(item) {
+  if (!item) return `<td class="muted">—</td>`;
+  const r = ratio(item);
+  return `<td><a href="${itemUrl(item.item_id)}" target="_blank" rel="noopener">${item.name}</a>
+        <div class="muted">${item.skill || "—"} · ${fmt(item.damage)} / ${fmt(item.delay)} (${r == null ? "—" : r.toFixed(2)})</div></td>`;
+}
+
 function renderCompare(baseWeapons, otherWeapons, baseLabel, otherLabel) {
   if (!otherWeapons) {
     els.compareBody.innerHTML = `<tr><td colspan="6" class="muted">Pick a second expansion to compare.</td></tr>`;
@@ -202,18 +208,18 @@ function renderCompare(baseWeapons, otherWeapons, baseLabel, otherLabel) {
   })) {
     const a = baseMap.get(key);
     const b = otherMap.get(key);
-    if (!a || !b) continue;
-    const ra = ratio(a);
-    const rb = ratio(b);
+    const shown = a || b;
+    const ra = a ? ratio(a) : null;
+    const rb = b ? ratio(b) : null;
     const pct = ra != null && rb != null ? percentChange(ra, rb) : null;
+    const deltaDmg = a && b ? fmt((b.damage || 0) - (a.damage || 0)) : "—";
+    const deltaRatio = a && b && ra != null && rb != null ? fmt(rb - ra) : "—";
     rows.push(`<tr>
-      <td>${weaponLineLabel(a)}</td>
-      <td><a href="${itemUrl(a.item_id)}" target="_blank" rel="noopener">${a.name}</a>
-        <div class="muted">${a.skill || "—"} · ${fmt(a.damage)} / ${fmt(a.delay)} (${ra == null ? "—" : ra.toFixed(2)})</div></td>
-      <td><a href="${itemUrl(b.item_id)}" target="_blank" rel="noopener">${b.name}</a>
-        <div class="muted">${b.skill || "—"} · ${fmt(b.damage)} / ${fmt(b.delay)} (${rb == null ? "—" : rb.toFixed(2)})</div></td>
-      <td class="num">${fmt((b.damage || 0) - (a.damage || 0))}</td>
-      <td class="num">${fmt((rb || 0) - (ra || 0))}</td>
+      <td>${weaponLineLabel(shown)}</td>
+      ${sideCell(a)}
+      ${sideCell(b)}
+      <td class="num">${deltaDmg}</td>
+      <td class="num">${deltaRatio}</td>
       <td class="num ${pctClass(pct)}">${fmtPct(pct)}</td>
     </tr>`);
   }
@@ -279,8 +285,18 @@ async function refresh() {
   }
 }
 
+function fillClassSelect() {
+  for (const cls of CLASSES) {
+    const opt = document.createElement("option");
+    opt.value = cls;
+    opt.textContent = cls;
+    els.classGroup.appendChild(opt);
+  }
+}
+
 async function init() {
   fillExpansionSelects();
+  fillClassSelect();
   for (const el of [els.expA, els.expB, els.classGroup, els.hand, els.line]) {
     el.addEventListener("change", () => { refresh().catch(console.error); });
   }

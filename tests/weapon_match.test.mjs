@@ -11,7 +11,14 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const data = await import(pathToFileURL(join(root, "js/data.js")).href);
-const { isWeaponItem, weaponHand, weaponLineLabel, weaponMatchKey, weaponProcSignature } = data;
+const {
+  isWeaponItem,
+  weaponHand,
+  weaponLineLabel,
+  weaponMatchKey,
+  weaponMatchesClassFilter,
+  weaponProcSignature,
+} = data;
 
 const ORDER = ["tov", "cov", "tol", "nos", "ls", "tob", "sor", "fof"];
 
@@ -138,6 +145,18 @@ describe("weapon lines", () => {
     assert.equal(new Set(ranger.map((h) => h.key)).size, 1);
     assert.equal(new Set(group.map((h) => h.key)).size, 1);
     assert.notEqual(ranger[0].key, group[0].key);
+  });
+
+  it("lists berserker weapons, including the exclusive greataxe", () => {
+    const ber = findLine((item) => weaponMatchesClassFilter(item, "BER"));
+    assert.ok(ber.some((h) => h.code === "fof" && /greataxe/i.test(h.item.name)));
+    assert.ok(ber.some((h) => h.code === "nos" && /poleaxe/i.test(h.item.name)));
+    assert.ok(ber.some((h) => h.code === "tov" && /great axe/i.test(h.item.name)));
+    assert.equal(ber.some((h) => weaponHand(h.item) === "1h"), false);
+    const exclusive = ber.filter((h) => classesOf(h.item) === "BER");
+    assert.ok(exclusive.length >= 5);
+    assert.equal(weaponMatchesClassFilter(exclusive[0].item, "WAR"), false);
+    assert.equal(weaponMatchesClassFilter(exclusive[0].item, "pal-shd"), false);
   });
 
   it("labels a renamed class line from the stable proc", () => {
