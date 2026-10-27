@@ -1,14 +1,15 @@
 import {
   EXPANSIONS,
+  WEAPON_HANDS,
   classListLabel,
   isWeaponItem,
   itemUrl,
   loadCatalog,
   orderedPair,
   weaponClassGroupId,
-  weaponFamily,
-  weaponFamilyKey,
-  weaponSkillKey,
+  weaponHand,
+  weaponLineLabel,
+  weaponMatchKey,
 } from "./data.js";
 import { percentChange } from "./scoring.js";
 
@@ -16,8 +17,8 @@ const els = {
   expA: document.getElementById("expA"),
   expB: document.getElementById("expB"),
   classGroup: document.getElementById("classFilter"),
-  skill: document.getElementById("skillFilter"),
-  family: document.getElementById("familyFilter"),
+  hand: document.getElementById("handFilter"),
+  line: document.getElementById("lineFilter"),
   banner: document.getElementById("banner"),
   list: document.getElementById("weaponList"),
   compareBody: document.getElementById("compareBody"),
@@ -69,75 +70,75 @@ function weaponPool(catalog) {
 
 function applyFilters(weapons) {
   const group = els.classGroup.value;
-  const skill = els.skill.value;
-  const family = els.family.value;
+  const hand = els.hand.value;
+  const line = els.line.value;
   return weapons.filter((w) => {
     if (group && weaponClassGroupId(w) !== group) return false;
-    if (skill && weaponSkillKey(w) !== skill) return false;
-    if (family && weaponFamilyKey(w) !== family) return false;
+    if (hand && weaponHand(w) !== hand) return false;
+    if (line && weaponMatchKey(w) !== line) return false;
     return true;
   });
 }
 
 function fillFilterOptions(weapons) {
-  const prevSkill = els.skill.value;
-  const prevFamily = els.family.value;
+  const prevHand = els.hand.value;
+  const prevLine = els.line.value;
   const group = els.classGroup.value;
   const pool = group
     ? weapons.filter((w) => weaponClassGroupId(w) === group)
     : weapons;
 
-  const skills = [...new Set(pool.map((w) => (w.skill || "").trim()).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b));
-  els.skill.innerHTML = "";
-  const skillAll = document.createElement("option");
-  skillAll.value = "";
-  skillAll.textContent = "All skills";
-  els.skill.appendChild(skillAll);
-  for (const skill of skills) {
+  const hands = new Set(pool.map((w) => weaponHand(w)).filter(Boolean));
+  els.hand.innerHTML = "";
+  const handAll = document.createElement("option");
+  handAll.value = "";
+  handAll.textContent = "All hands";
+  els.hand.appendChild(handAll);
+  for (const hand of WEAPON_HANDS) {
+    if (!hands.has(hand.id)) continue;
     const opt = document.createElement("option");
-    opt.value = skill.toLowerCase();
-    opt.textContent = skill;
-    els.skill.appendChild(opt);
+    opt.value = hand.id;
+    opt.textContent = hand.label;
+    els.hand.appendChild(opt);
   }
-  if ([...els.skill.options].some((o) => o.value === prevSkill)) {
-    els.skill.value = prevSkill;
+  if ([...els.hand.options].some((o) => o.value === prevHand)) {
+    els.hand.value = prevHand;
   } else {
-    els.skill.value = "";
+    els.hand.value = "";
   }
 
-  const activeSkill = els.skill.value;
-  const skillFiltered = activeSkill
-    ? pool.filter((w) => weaponSkillKey(w) === activeSkill)
+  const activeHand = els.hand.value;
+  const handFiltered = activeHand
+    ? pool.filter((w) => weaponHand(w) === activeHand)
     : pool;
-  const families = [...new Map(
-    skillFiltered.map((w) => [weaponFamilyKey(w), weaponFamily(w.name)])
+  const lines = [...new Map(
+    handFiltered.map((w) => [weaponMatchKey(w), weaponLineLabel(w)])
   ).entries()]
     .filter(([key]) => key)
     .sort((a, b) => a[1].localeCompare(b[1]));
 
-  els.family.innerHTML = "";
-  const familyAll = document.createElement("option");
-  familyAll.value = "";
-  familyAll.textContent = "All weapons";
-  els.family.appendChild(familyAll);
-  for (const [key, label] of families) {
+  els.line.innerHTML = "";
+  const lineAll = document.createElement("option");
+  lineAll.value = "";
+  lineAll.textContent = "All weapons";
+  els.line.appendChild(lineAll);
+  for (const [key, label] of lines) {
     const opt = document.createElement("option");
     opt.value = key;
     opt.textContent = label;
-    els.family.appendChild(opt);
+    els.line.appendChild(opt);
   }
-  if ([...els.family.options].some((o) => o.value === prevFamily)) {
-    els.family.value = prevFamily;
+  if ([...els.line.options].some((o) => o.value === prevLine)) {
+    els.line.value = prevLine;
   } else {
-    els.family.value = "";
+    els.line.value = "";
   }
 }
 
-function bestByFamily(weapons) {
+function bestByLine(weapons) {
   const map = new Map();
   for (const w of weapons) {
-    const key = weaponFamilyKey(w);
+    const key = weaponMatchKey(w);
     if (!key) continue;
     const prev = map.get(key);
     const score = Number(w.stats?.hp || 0) + Number(w.damage || 0) * 10;
@@ -161,7 +162,7 @@ function renderList(weapons, label) {
       const r = ratio(w);
       return `<tr>
         <td><a href="${itemUrl(w.item_id)}" target="_blank" rel="noopener">${w.name}</a></td>
-        <td>${weaponFamily(w.name)}</td>
+        <td>${weaponLineLabel(w)}</td>
         <td>${classListLabel(w)}</td>
         <td>${w.skill || (w.slots || []).join(", ") || "—"}</td>
         <td class="num">${fmt(w.damage)}</td>
@@ -176,7 +177,7 @@ function renderList(weapons, label) {
     <table>
       <thead>
         <tr>
-          <th>Weapon</th><th>Type</th><th>Classes</th><th>Skill</th><th class="num">Dmg</th>
+          <th>Weapon</th><th>Line</th><th>Classes</th><th>Skill</th><th class="num">Dmg</th>
           <th class="num">Delay</th><th class="num">Ratio</th>
           <th class="num">HP</th><th class="num">AC</th>
         </tr>
@@ -190,11 +191,15 @@ function renderCompare(baseWeapons, otherWeapons, baseLabel, otherLabel) {
     els.compareBody.innerHTML = `<tr><td colspan="6" class="muted">Pick a second expansion to compare.</td></tr>`;
     return;
   }
-  const baseMap = bestByFamily(baseWeapons);
-  const otherMap = bestByFamily(otherWeapons);
+  const baseMap = bestByLine(baseWeapons);
+  const otherMap = bestByLine(otherWeapons);
   const keys = new Set([...baseMap.keys(), ...otherMap.keys()]);
   const rows = [];
-  for (const key of [...keys].sort()) {
+  for (const key of [...keys].sort((a, b) => {
+    const la = weaponLineLabel(baseMap.get(a) || otherMap.get(a));
+    const lb = weaponLineLabel(baseMap.get(b) || otherMap.get(b));
+    return la.localeCompare(lb);
+  })) {
     const a = baseMap.get(key);
     const b = otherMap.get(key);
     if (!a || !b) continue;
@@ -202,11 +207,11 @@ function renderCompare(baseWeapons, otherWeapons, baseLabel, otherLabel) {
     const rb = ratio(b);
     const pct = ra != null && rb != null ? percentChange(ra, rb) : null;
     rows.push(`<tr>
-      <td>${weaponFamily(a.name)}<div class="muted">${a.skill || "—"}</div></td>
+      <td>${weaponLineLabel(a)}</td>
       <td><a href="${itemUrl(a.item_id)}" target="_blank" rel="noopener">${a.name}</a>
-        <div class="muted">${classListLabel(a)} · ${fmt(a.damage)} / ${fmt(a.delay)} (${ra == null ? "—" : ra.toFixed(2)})</div></td>
+        <div class="muted">${a.skill || "—"} · ${fmt(a.damage)} / ${fmt(a.delay)} (${ra == null ? "—" : ra.toFixed(2)})</div></td>
       <td><a href="${itemUrl(b.item_id)}" target="_blank" rel="noopener">${b.name}</a>
-        <div class="muted">${classListLabel(b)} · ${fmt(b.damage)} / ${fmt(b.delay)} (${rb == null ? "—" : rb.toFixed(2)})</div></td>
+        <div class="muted">${b.skill || "—"} · ${fmt(b.damage)} / ${fmt(b.delay)} (${rb == null ? "—" : rb.toFixed(2)})</div></td>
       <td class="num">${fmt((b.damage || 0) - (a.damage || 0))}</td>
       <td class="num">${fmt((rb || 0) - (ra || 0))}</td>
       <td class="num ${pctClass(pct)}">${fmtPct(pct)}</td>
@@ -276,7 +281,7 @@ async function refresh() {
 
 async function init() {
   fillExpansionSelects();
-  for (const el of [els.expA, els.expB, els.classGroup, els.skill, els.family]) {
+  for (const el of [els.expA, els.expB, els.classGroup, els.hand, els.line]) {
     el.addEventListener("change", () => { refresh().catch(console.error); });
   }
   await refresh();

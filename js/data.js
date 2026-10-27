@@ -56,6 +56,106 @@ export function weaponSkillKey(item) {
   return `${slotList.sort().join(",")}|${(item.name || "").toLowerCase()}`;
 }
 
+/** 1H and 2H ignore blunt/pierce/slash. Bows and hand-to-hand stay their own hands. */
+export const WEAPON_HANDS = [
+  { id: "1h", label: "1H" },
+  { id: "2h", label: "2H" },
+  { id: "h2h", label: "Hand to Hand" },
+  { id: "bow", label: "Bow" },
+];
+
+export function weaponHand(item) {
+  const skill = String(item?.skill || "").toLowerCase();
+  if (skill.includes("archery") || skill.includes("bow")) return "bow";
+  if (skill.includes("hand to hand")) return "h2h";
+  if (skill.startsWith("2h") || /\b2h\b/.test(skill)) return "2h";
+  if (skill.startsWith("1h") || /\b1h\b/.test(skill)) return "1h";
+  return "";
+}
+
+export function weaponHandLabel(hand) {
+  return WEAPON_HANDS.find((h) => h.id === hand)?.label || hand || "—";
+}
+
+/** Procs that rotate between expansions and do not identify the weapon. */
+const ELEMENTAL_PROCS = new Set([
+  "spike of ice",
+  "spike of magic",
+  "burst of flames",
+  "strike of ice",
+  "blaze of fire",
+  "hammer of magic",
+  "surge of ice",
+  "wave of poison",
+  "wave of corruption",
+  "perfusion of plague",
+  "vector of sickness",
+]);
+
+function isRankToken(token) {
+  if (/^\d+$/.test(token)) return true;
+  return /^(?:x{1,3}(?:ix|iv|v?i{0,3})|x{0,3}(?:ix|iv|v|vi{0,3}|i{1,3}))$/.test(token);
+}
+
+function normalizeProcName(text) {
+  let n = String(text || "").trim().toLowerCase();
+  n = n.replace(/^sympathetic\s+/, "");
+  const parts = n.split(/\s+/);
+  if (parts.length > 1 && isRankToken(parts[parts.length - 1])) parts.pop();
+  return parts.join(" ").trim();
+}
+
+function procParts(item) {
+  const raw = String(item?.effect || item?.focus || "");
+  return raw
+    .split(";")
+    .map((part) => normalizeProcName(part))
+    .filter(Boolean);
+}
+
+/** Stable proc identity. Rotating damage procs collapse to "elemental". */
+export function weaponProcSignature(item) {
+  const parts = procParts(item);
+  const stable = [...new Set(parts.filter((p) => !ELEMENTAL_PROCS.has(p)))].sort();
+  if (stable.length) return stable.join("+");
+  if (parts.length) return "elemental";
+  return "";
+}
+
+function titleCaseProc(name) {
+  const small = new Set(["of", "the", "a"]);
+  return name.split(" ").map((word, i) => {
+    if (i > 0 && small.has(word)) return word;
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(" ");
+}
+
+function procDisplay(item) {
+  const parts = procParts(item);
+  const stable = parts.filter((p) => !ELEMENTAL_PROCS.has(p) && p !== "prismatic ward");
+  const named = stable.length ? stable : parts.filter((p) => !ELEMENTAL_PROCS.has(p));
+  if (named.length) return titleCaseProc(named[0]);
+  return "Damage proc";
+}
+
+/**
+ * Same weapon across expansions: class set, hand (not damage type), delay, and proc.
+ * Names and blunt/pierce/slash are allowed to change.
+ */
+export function weaponMatchKey(item) {
+  const classes = item?.class_all
+    ? "all"
+    : [...weaponClassSet(item)].sort().join(",");
+  const hand = weaponHand(item);
+  const delay = Number(item?.delay || 0);
+  return `${classes}|${hand}|${delay}|${weaponProcSignature(item)}`;
+}
+
+export function weaponLineLabel(item) {
+  const hand = weaponHandLabel(weaponHand(item));
+  return `${hand} · ${classListLabel(item)} · ${procDisplay(item)}`;
+}
+
 /** Strip expansion set prefixes/suffixes so "Injection Dagger of Rebellion" → "Injection Dagger". */
 export function weaponFamily(name) {
   let n = String(name || "").trim();
