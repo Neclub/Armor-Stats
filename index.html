@@ -36,28 +36,32 @@
     </div>
 
     <div id="banner" class="banner hidden"></div>
-    <section class="panel">
-      <h2>Stat change (older → newer)</h2>
-      <div class="chart-wrap">
-        <canvas id="pctChart"></canvas>
-      </div>
-    </section>
+    <div class="compare-row">
+      <section class="panel panel-chart">
+        <h2>Stat change (older → newer)</h2>
+        <div class="chart-wrap">
+          <canvas id="pctChart"></canvas>
+        </div>
+      </section>
 
-    <section class="panel">
-      <h2>Set totals</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Stat</th>
-            <th class="num" id="baseCol">Base</th>
-            <th class="num" id="otherCol">Other</th>
-            <th class="num">Change</th>
-            <th class="num">%</th>
-          </tr>
-        </thead>
-        <tbody id="totalsBody"></tbody>
-      </table>
-    </section>
+      <section class="panel panel-totals">
+        <h2>Set totals</h2>
+        <div class="totals-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Stat</th>
+                <th class="num" id="baseCol">Base</th>
+                <th class="num" id="otherCol">Other</th>
+                <th class="num">Change</th>
+                <th class="num">%</th>
+              </tr>
+            </thead>
+            <tbody id="totalsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
 
     <section class="panel">
       <h2>Loadout by slot</h2>
