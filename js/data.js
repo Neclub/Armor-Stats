@@ -85,3 +85,33 @@ export function isWeaponItem(item) {
   const set = new Set(Array.isArray(slots) ? slots : [...slots]);
   return set.has("Primary") || set.has("Secondary");
 }
+
+/** Exact class pairs that share a weapon and nobody else does. */
+const EXCLUSIVE_WEAPON_CLASSES = {
+  "pal-shd": ["PAL", "SHD"],
+  "mnk-bst": ["MNK", "BST"],
+};
+
+export function weaponClassSet(item) {
+  return new Set((item?.classes || []).map((c) => String(c).toUpperCase()));
+}
+
+/** "pal-shd" or "mnk-bst" when the weapon is usable by that pair only. */
+export function weaponClassGroupId(item) {
+  if (!item || item.class_all) return "";
+  const set = weaponClassSet(item);
+  for (const [id, classes] of Object.entries(EXCLUSIVE_WEAPON_CLASSES)) {
+    if (set.size === classes.length && classes.every((c) => set.has(c))) return id;
+  }
+  return "";
+}
+
+export function classListLabel(item) {
+  if (!item) return "—";
+  if (item.class_all) return "All";
+  const have = weaponClassSet(item);
+  const ordered = CLASSES.filter((c) => have.has(c));
+  const extra = [...have].filter((c) => !CLASSES.includes(c)).sort();
+  const labels = [...ordered, ...extra];
+  return labels.length ? labels.join(", ") : "—";
+}

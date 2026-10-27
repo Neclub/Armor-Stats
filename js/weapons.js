@@ -1,9 +1,11 @@
 import {
   EXPANSIONS,
+  classListLabel,
   isWeaponItem,
   itemUrl,
   loadCatalog,
   orderedPair,
+  weaponClassGroupId,
   weaponFamily,
   weaponFamilyKey,
   weaponSkillKey,
@@ -13,6 +15,7 @@ import { percentChange } from "./scoring.js";
 const els = {
   expA: document.getElementById("expA"),
   expB: document.getElementById("expB"),
+  classGroup: document.getElementById("classFilter"),
   skill: document.getElementById("skillFilter"),
   family: document.getElementById("familyFilter"),
   banner: document.getElementById("banner"),
@@ -65,9 +68,11 @@ function weaponPool(catalog) {
 }
 
 function applyFilters(weapons) {
+  const group = els.classGroup.value;
   const skill = els.skill.value;
   const family = els.family.value;
   return weapons.filter((w) => {
+    if (group && weaponClassGroupId(w) !== group) return false;
     if (skill && weaponSkillKey(w) !== skill) return false;
     if (family && weaponFamilyKey(w) !== family) return false;
     return true;
@@ -77,8 +82,12 @@ function applyFilters(weapons) {
 function fillFilterOptions(weapons) {
   const prevSkill = els.skill.value;
   const prevFamily = els.family.value;
+  const group = els.classGroup.value;
+  const pool = group
+    ? weapons.filter((w) => weaponClassGroupId(w) === group)
+    : weapons;
 
-  const skills = [...new Set(weapons.map((w) => (w.skill || "").trim()).filter(Boolean))]
+  const skills = [...new Set(pool.map((w) => (w.skill || "").trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
   els.skill.innerHTML = "";
   const skillAll = document.createElement("option");
@@ -93,11 +102,14 @@ function fillFilterOptions(weapons) {
   }
   if ([...els.skill.options].some((o) => o.value === prevSkill)) {
     els.skill.value = prevSkill;
+  } else {
+    els.skill.value = "";
   }
 
-  const skillFiltered = prevSkill
-    ? weapons.filter((w) => weaponSkillKey(w) === prevSkill)
-    : weapons;
+  const activeSkill = els.skill.value;
+  const skillFiltered = activeSkill
+    ? pool.filter((w) => weaponSkillKey(w) === activeSkill)
+    : pool;
   const families = [...new Map(
     skillFiltered.map((w) => [weaponFamilyKey(w), weaponFamily(w.name)])
   ).entries()]
@@ -150,6 +162,7 @@ function renderList(weapons, label) {
       return `<tr>
         <td><a href="${itemUrl(w.item_id)}" target="_blank" rel="noopener">${w.name}</a></td>
         <td>${weaponFamily(w.name)}</td>
+        <td>${classListLabel(w)}</td>
         <td>${w.skill || (w.slots || []).join(", ") || "—"}</td>
         <td class="num">${fmt(w.damage)}</td>
         <td class="num">${fmt(w.delay)}</td>
@@ -163,7 +176,7 @@ function renderList(weapons, label) {
     <table>
       <thead>
         <tr>
-          <th>Weapon</th><th>Type</th><th>Skill</th><th class="num">Dmg</th>
+          <th>Weapon</th><th>Type</th><th>Classes</th><th>Skill</th><th class="num">Dmg</th>
           <th class="num">Delay</th><th class="num">Ratio</th>
           <th class="num">HP</th><th class="num">AC</th>
         </tr>
@@ -191,9 +204,9 @@ function renderCompare(baseWeapons, otherWeapons, baseLabel, otherLabel) {
     rows.push(`<tr>
       <td>${weaponFamily(a.name)}<div class="muted">${a.skill || "—"}</div></td>
       <td><a href="${itemUrl(a.item_id)}" target="_blank" rel="noopener">${a.name}</a>
-        <div class="muted">${fmt(a.damage)} / ${fmt(a.delay)} (${ra == null ? "—" : ra.toFixed(2)})</div></td>
+        <div class="muted">${classListLabel(a)} · ${fmt(a.damage)} / ${fmt(a.delay)} (${ra == null ? "—" : ra.toFixed(2)})</div></td>
       <td><a href="${itemUrl(b.item_id)}" target="_blank" rel="noopener">${b.name}</a>
-        <div class="muted">${fmt(b.damage)} / ${fmt(b.delay)} (${rb == null ? "—" : rb.toFixed(2)})</div></td>
+        <div class="muted">${classListLabel(b)} · ${fmt(b.damage)} / ${fmt(b.delay)} (${rb == null ? "—" : rb.toFixed(2)})</div></td>
       <td class="num">${fmt((b.damage || 0) - (a.damage || 0))}</td>
       <td class="num">${fmt((rb || 0) - (ra || 0))}</td>
       <td class="num ${pctClass(pct)}">${fmtPct(pct)}</td>
@@ -263,7 +276,7 @@ async function refresh() {
 
 async function init() {
   fillExpansionSelects();
-  for (const el of [els.expA, els.expB, els.skill, els.family]) {
+  for (const el of [els.expA, els.expB, els.classGroup, els.skill, els.family]) {
     el.addEventListener("change", () => { refresh().catch(console.error); });
   }
   await refresh();
