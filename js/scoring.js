@@ -8,6 +8,13 @@ export const SCORED_SLOTS = [
   "Fingers-1", "Fingers-2", "Range",
 ];
 
+/** Loadout UI order: keep ears, wrists, and rings together. */
+export const DISPLAY_SLOTS = [
+  "Ear-1", "Ear-2", "Head", "Face", "Chest", "Neck", "Arms", "Back", "Waist",
+  "Shoulders", "Wrist-1", "Wrist-2", "Fingers-1", "Fingers-2",
+  "Legs", "Hands", "Charm", "Feet", "Range",
+];
+
 export const NON_LORE_SLOTS = new Set(["Wrist-1", "Wrist-2"]);
 export const PET_FOCUS_CLASSES = new Set(["MAG", "BST", "NEC"]);
 

@@ -8,10 +8,13 @@ import {
 import {
   buildIdealLoadout,
   compareTotals,
-  SCORED_SLOTS,
+  DISPLAY_SLOTS,
+  PET_FOCUS_CLASSES,
+  preferredWaistSpec,
   sumLoadoutStats,
 } from "./scoring.js";
 import {
+  bisStatRules,
   HEROIC_STATS,
   loadWeightTables,
   POOL_STATS,
@@ -25,6 +28,8 @@ const els = {
   expB: document.getElementById("expB"),
   mode: document.getElementById("modeSelect"),
   banner: document.getElementById("banner"),
+  bisRulesTip: document.getElementById("bisRulesTip"),
+  bisRulesBalloon: document.getElementById("bisRulesBalloon"),
   totalsBody: document.getElementById("totalsBody"),
   slots: document.getElementById("slotList"),
   chart: document.getElementById("pctChart"),
@@ -67,6 +72,32 @@ function fmtPct(p) {
 function pctClass(p) {
   if (p == null || Number.isNaN(p) || p === 0) return "muted";
   return p > 0 ? "pos" : "neg";
+}
+
+function renderBisRules(classAbbr) {
+  if (!els.bisRulesBalloon) return;
+  const classKey = String(classAbbr || "").toUpperCase();
+  const primary = bisStatRules(classAbbr).weights.find((w) => w.weight > 0);
+  const lines = [];
+  if (primary) lines.push(primary.text);
+  const waist = preferredWaistSpec(classAbbr);
+  if (waist?.label) lines.push(`${waist.label} Prioritized`);
+  if (PET_FOCUS_CLASSES.has(classKey)) lines.push("Pet-focus ears Prioritized");
+  if (classKey === "RNG") lines.push("Ranger-only bow Prioritized");
+  els.bisRulesBalloon.innerHTML = lines.length
+    ? lines.map((line) => `<div>${line}</div>`).join("")
+    : "No BiS priority";
+}
+
+function setBisBalloonOpen(open) {
+  if (!els.bisRulesBalloon || !els.bisRulesTip) return;
+  if (open) {
+    els.bisRulesBalloon.hidden = false;
+    els.bisRulesTip.setAttribute("aria-expanded", "true");
+  } else {
+    els.bisRulesBalloon.hidden = true;
+    els.bisRulesTip.setAttribute("aria-expanded", "false");
+  }
 }
 
 function renderTotals(rows) {
@@ -185,7 +216,7 @@ function renderSlots(baseLoadout, otherLoadout, baseLabel, otherLabel) {
       <div class="muted">${baseLabel}</div>
       <div class="muted">${otherLabel}</div>
     </div>`;
-  for (const slot of SCORED_SLOTS) {
+  for (const slot of DISPLAY_SLOTS) {
     const a = baseLoadout[slot];
     const b = otherLoadout[slot];
     if (!a && !b) continue;
@@ -228,6 +259,7 @@ async function refresh() {
 
   document.getElementById("baseCol").textContent = baseExp.abbr;
   document.getElementById("otherCol").textContent = otherExp.abbr;
+  renderBisRules(classAbbr);
 
   const baseLoadout = buildIdealLoadout(baseCat.items, classAbbr, mode);
   const otherLoadout = buildIdealLoadout(otherCat.items, classAbbr, mode);
@@ -247,6 +279,17 @@ async function init() {
   ready = true;
   for (const el of [els.class, els.expA, els.expB, els.mode]) {
     el.addEventListener("change", () => { refresh().catch(console.error); });
+  }
+  if (els.bisRulesTip && els.bisRulesBalloon) {
+    els.bisRulesTip.setAttribute("aria-expanded", "false");
+    els.bisRulesTip.addEventListener("mouseenter", () => setBisBalloonOpen(true));
+    els.bisRulesTip.addEventListener("mouseleave", () => setBisBalloonOpen(false));
+    els.bisRulesTip.addEventListener("focus", () => setBisBalloonOpen(true));
+    els.bisRulesTip.addEventListener("blur", () => setBisBalloonOpen(false));
+    els.bisRulesTip.addEventListener("click", (event) => {
+      event.preventDefault();
+      setBisBalloonOpen(true);
+    });
   }
   await refresh();
 }

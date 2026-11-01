@@ -62,12 +62,47 @@ function defaultRole(profile) {
   return "melee_dps";
 }
 
+export const ROLE_DISPLAY = {
+  tank: "Tank",
+  priest: "Priest",
+  pure_caster: "Pure caster",
+  melee_dps: "Melee DPS",
+  hybrid_dps: "Hybrid DPS",
+};
+
 /** Resolved EQGM role name for a class (tank, priest, pure_caster, melee_dps, hybrid_dps). */
 export function roleForClass(classAbbr) {
   const key = (classAbbr || "").trim().toUpperCase() || null;
   const packaged = key ? (tables.classes[key] || {}) : {};
   if (packaged.role) return packaged.role;
   return defaultRole(CLASS_TO_PROFILE[key] || "dex");
+}
+
+/**
+ * Base BiS scoring weights for a class (Chest slot — no feet/shield overlays).
+ * Weights are sorted by absolute strength so the first positive entry is primary.
+ * @returns {{ role: string, roleLabel: string, weights: { key: string, label: string, weight: number, text: string }[] }}
+ */
+export function bisStatRules(classAbbr) {
+  const role = roleForClass(classAbbr);
+  const weights = resolveWeights(classAbbr, "Chest");
+  const entries = Object.entries(weights)
+    .map(([key, weight]) => {
+      const n = Number(weight);
+      const label = STAT_DISPLAY[key] || key;
+      return {
+        key,
+        label,
+        weight: n,
+        text: n < 0 ? `${label} Deprioritized` : `${label} Prioritized`,
+      };
+    })
+    .sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label));
+  return {
+    role,
+    roleLabel: ROLE_DISPLAY[role] || role,
+    weights: entries,
+  };
 }
 
 function mergeMaps(...maps) {

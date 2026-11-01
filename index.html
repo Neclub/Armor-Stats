@@ -45,7 +45,11 @@
       </section>
 
       <section class="panel panel-totals">
-        <h2>Set totals</h2>
+        <h2 class="has-balloon">
+          <span>Set totals</span>
+          <button type="button" id="bisRulesTip" class="info-tip" aria-describedby="bisRulesBalloon" aria-label="BiS stat rules">?</button>
+          <div id="bisRulesBalloon" class="balloon" role="tooltip" hidden></div>
+        </h2>
         <div class="totals-scroll">
           <table>
             <thead>
@@ -68,6 +72,6 @@
       <div id="slotList" class="slot-grid"></div>
     </section>
   </main>
-  <script type="module" src="js/armor.js"></script>
+  <script type="module" src="js/armor.js?v=slots"></script>
 </body>
 </html>

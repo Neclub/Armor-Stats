@@ -120,6 +120,78 @@ button:hover { filter: brightness(1.08); }
   font-size: 1.05rem;
 }
 
+.has-balloon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.info-tip {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  align-self: center;
+}
+
+.info-tip:hover,
+.info-tip:focus-visible {
+  color: var(--text);
+  border-color: #3a78b0;
+  outline: none;
+}
+
+.balloon {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  z-index: 5;
+  min-width: 11rem;
+  max-width: 16rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #16202b;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.balloon::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 1.35rem;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: #16202b;
+  transform: rotate(45deg);
+}
+
+.balloon[hidden] {
+  display: none;
+}
+
+.balloon div + div {
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+
 .compare-row {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
