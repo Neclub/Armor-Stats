@@ -39,7 +39,7 @@ function fillExpansionSelects() {
     }
   }
   els.expA.value = "sor";
-  els.expB.value = "tob";
+  els.expB.value = "fof";
 }
 
 function ratio(item) {

@@ -53,8 +53,8 @@ function fillSelects() {
       sel.appendChild(opt);
     }
   }
-  els.expA.value = "ls";
-  els.expB.value = "tob";
+  els.expA.value = "sor";
+  els.expB.value = "fof";
   els.class.value = "WAR";
   els.mode.value = "BIS";
 }
